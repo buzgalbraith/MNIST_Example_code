@@ -5,6 +5,8 @@ import time
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from typing import Union
+import os
+import glob
 
 
 class conv_net(nn.Module):
@@ -35,8 +37,18 @@ class conv_net(nn.Module):
         return x
 
     def save_model(self, file_path: str) -> None:
-        """save model to file_path."""
-        torch.save(self.state_dict(), str(time.time()) + "_" + file_path)
+        """save model to file_path.
+        Args:
+            file_path (str): path to save model to
+        """
+        ## format the file path
+        save_path = "saved_models/" + file_path
+        save_path = save_path if save_path[-3:] == ".pt" else save_path + ".pt"
+        save_path = (
+            save_path[:-3] + "_" + str(round(time.time())) + ".pt"
+        )  ## rounding to take out miliseconds since the period could mess with the file path
+        ## saving the model to the file.
+        torch.save(self.state_dict(), save_path)
 
 
 ## helper function to show images
@@ -45,6 +57,8 @@ def show_images(
     model: Union[torch.nn.Module, None] = None,
     num_batches: int = 1,
     batch_size: int = 1,
+    save_fig: bool = True,
+    show_fig: bool = False,
 ) -> None:
     """shows images from the loader and optionally what a model predicted for those images.
     Args:
@@ -52,6 +66,8 @@ def show_images(
     model (torch.nn.Module, optional): model to predict with Defaults to None which will just show the true label.
     batch_size (int, optional): number of images to show per batch. Defaults to 1.
     num_batches (int, optional): number of batches to show. Defaults to 1.
+    save_fig (bool, optional): whether to save the figure. Defaults to True.
+    show_fig (bool, optional): whether to show the figure. Defaults to False.
     """
     fig, ax = plt.subplots(ncols=batch_size, nrows=num_batches)
     index = 0
@@ -70,23 +86,35 @@ def show_images(
             )
             title_text = "True Label:" + str((y[j]))[-3] + predicted_label_test
             ax[index][j].imshow(image, cmap=plt.cm.gray)
-            ax[index][j].set_title(title_text, fontsize=15)
+            ax[index][j].set_title(title_text, fontsize=7.5)
         index += 1
     title_text = (
         "Examples from the MNIST Dataset"
         if model is None
-        else "Predictions on the Test Dataset"
+        else "Predictions on the Test Datase"
     )
     plt.suptitle(title_text)
-    plt.show()
+    save_title = "mnist_example.png" if model is None else "mnist_predictions.png"
+    ## saves the figure to a set location.
+    if save_fig:
+        plt.savefig("saved_figs/" + save_title)
+    ## shows the figure (does not work on remote servers)
+    if show_fig:
+        plt.show()
 
 
-def plot_confusion_matrix(model: nn.Module, loader: DataLoader) -> None:
+def plot_confusion_matrix(
+    model: nn.Module,
+    loader: DataLoader,
+    save_fig: bool = True,
+    show_fig: bool = False,
+) -> None:
     """plots a confusion matrix for the model on the loader data.
     Args:
         model (nn.Module): model to predict with
         loader (DataLoader): dataloader object
-        batch_size (int, optional): number of images to show per batch. Defaults to 1.
+        save_fig (bool, optional): whether to save the figure. Defaults to True.
+        show_fig (bool, optional): whether to show the figure. Defaults to False.
     """
     confusion_matrix = torch.zeros((10, 10))
     for x, y in loader:
@@ -106,5 +134,27 @@ def plot_confusion_matrix(model: nn.Module, loader: DataLoader) -> None:
             text = ax.text(
                 j, i, int(confusion_matrix[i, j]), ha="center", va="center", color="w"
             )
-    fig.tight_layout()
-    plt.show()
+    if save_fig:
+        plt.savefig("saved_figs/confusion_matrix.png")
+    if show_fig:
+        plt.show()
+
+
+def get_most_recent_model(file_path: str = "saved_models") -> str:
+    """gets the most recent file in a directory.
+    Args:
+        file_path (str, optional): path to directory. Defaults to 'saved_models'.
+    Returns:
+        str: file path to most recent model
+    """
+    file_path = file_path if file_path[-1] == "/" else file_path + "/"
+    list_of_files = glob.glob(
+        file_path + "/*"
+    )  # * means all if need specific format then *.csv
+    try:
+        latest_file = max(list_of_files, key=os.path.getctime)
+    except:
+        raise ValueError(
+            "Directory is empty, be sure to run cnn_train.py first and you are pointing to the correct directory"
+        )
+    return latest_file

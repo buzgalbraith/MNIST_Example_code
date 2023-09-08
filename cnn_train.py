@@ -37,4 +37,4 @@ for epoch in range(2):
     ## typically we would also want to check performance on a validation set here, but we will skip that for brevity
 
 ## assuming this trains well, which it may not we can save the model
-con_net_instance.save_model(file_path="my_model.pt")
+con_net_instance.save_model(file_path="example_conv_net.pt")
