@@ -13,12 +13,15 @@ class conv_net(nn.Module):
 
     """simple convolutional net for mnist dataset."""
 
-    def __init__(self, input_size: int = 28, output_size: int = 10) -> None:
+    def __init__(self, output_size: int = 10, hidden_size: int = 64) -> None:
         super().__init__()
-        self.input_layer = nn.Linear(input_size * input_size, 25 * 25)
-        self.conv_layer = nn.Conv1d(25, 20, kernel_size=6, stride=1, padding=0)
-        self.pool_layer = nn.MaxPool2d(kernel_size=13, stride=1, padding=1)
-        self.output_layer = nn.Linear(in_features=10 * 10, out_features=output_size)
+        print("using hidden size {0}".format(hidden_size))
+        self.conv_layer_1 = nn.Conv2d(in_channels = 1, out_channels=hidden_size, kernel_size=3, stride=1, padding=0) ## output size = [batch_size, output channels, height, width]
+        self.pool_layer_1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) ## output size = [batch_size, output channels, 10, 10]
+        self.conv_layer_2 = nn.Conv2d(in_channels=hidden_size, out_channels=hidden_size, kernel_size=3, stride=1, padding=0) ## output size = [batch_size, output channels, 6, 6]
+        self.pool_layer_2 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) 
+        self.fc_layer = nn.Linear(in_features =  6*6*hidden_size, out_features=64) ## output size = [batch_size, output_size]
+        self.output_layer = nn.Linear(in_features =  64, out_features=10) ## output size = [batch_size, output_size]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """conv net forward pass.
@@ -27,14 +30,19 @@ class conv_net(nn.Module):
         Returns:
             torch.Tensor: output tensor of shape (batch_size, 9) corresponding to the 10 classes of the mnist dataset
         """
-        x = x.reshape(x.shape[0], -1)  ## flatten the input
-        x = self.input_layer(x)
-        x = x.reshape(x.shape[0], 25, 25)  ## reshape to 25x25
-        x = self.conv_layer(x)
-        x = self.pool_layer(x)
-        x = x.reshape(x.shape[0], -1)  ## flatten for output layer
-        x = self.output_layer(x)
-        return x
+        x = x.reshape(x.shape[0], 1, 28, 28) ## reshape to batch size, channel in , height, width
+        c1 = self.conv_layer_1(x) ## [batch size, channel, height , width]
+        r1 = torch.nn.functional.relu(c1)
+        p1 = self.pool_layer_1(r1) ## [batch size, channel, height , width
+        
+        c2 = self.conv_layer_2(p1)
+        r2 = torch.nn.functional.relu(c2)
+        p2 = self.pool_layer_2(r2)
+        l1 = p2.reshape(p2.shape[0], -1)  ## flatten the output of the conv layers
+        fc1 = self.fc_layer(l1)
+        r3 = torch.nn.functional.relu(fc1)
+        fc2 = self.output_layer(r3)
+        return torch.nn.functional.softmax(fc2, dim=1) ## softmax to get probabilities
 
     def save_model(self, file_path: str) -> None:
         """save model to file_path.

@@ -7,7 +7,7 @@ from example_cnn import *
 
 file_path = get_most_recent_model(file_path="saved_models/")
 print(file_path)
-conv_net_instance = conv_net(input_size=28, output_size=10)
+conv_net_instance = conv_net( output_size=10, hidden_size=16)
 conv_net_instance.load_state_dict(torch.load(file_path))
 ## load data
 mnist_dataloader = MnistDataloader(
