@@ -20,7 +20,6 @@ class conv_net(nn.Module):
         self.pool_layer_1 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) ## output size = [batch_size, output channels, 10, 10]
         self.conv_layer_2 = nn.Conv2d(in_channels=hidden_size, out_channels=hidden_size, kernel_size=3, stride=1, padding=0) ## output size = [batch_size, output channels, 6, 6]
         self.pool_layer_2 = nn.MaxPool2d(kernel_size=3, stride=2, padding=1) 
-        self.downsample = nn.Conv2d(in_channels=1, out_channels=hidden_size, kernel_size=1, stride=5, padding=0) ## output size = [batch_size, output channels, 28, 28]
         self.fc_layer = nn.Linear(in_features =  6*6*hidden_size, out_features=64) ## output size = [batch_size, output_size]
         self.output_layer = nn.Linear(in_features =  64, out_features=10) ## output size = [batch_size, output_size]
 
@@ -35,14 +34,10 @@ class conv_net(nn.Module):
         c1 = self.conv_layer_1(x) ## [batch size, channel, height , width]
         r1 = torch.nn.functional.relu(c1)
         p1 = self.pool_layer_1(r1) ## [batch size, channel, height , width
-        ## skip connection 
-
         c2 = self.conv_layer_2(p1) 
         r2 = torch.nn.functional.relu(c2)
         p2 = self.pool_layer_2(r2)
-        x3 = p2 + self.downsample(x)
-        x3 = torch.nn.functional.avg_pool2d(x3, kernel_size=3, stride=2, padding=1)
-        l1 = p2.reshape(x3.shape[0], -1)  ## flatten the output of the conv layers
+        l1 = p2.reshape(p2.shape[0], -1)  ## flatten the output of the conv layers
         fc1 = self.fc_layer(l1)
         r3 = torch.nn.functional.relu(fc1)
         fc2 = self.output_layer(r3)
@@ -170,3 +165,4 @@ def get_most_recent_model(file_path: str = "saved_models") -> str:
             "Directory is empty, be sure to run cnn_train.py first and you are pointing to the correct directory"
         )
     return latest_file
+
