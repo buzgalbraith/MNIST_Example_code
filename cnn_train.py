@@ -29,7 +29,7 @@ if device.type == 'cuda':
     print('Cached:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB')
 ## train the model
 loss_fn = nn.CrossEntropyLoss()  ## defining the loss function
-max_epochs = 10
+max_epochs = 16
 optimizer = torch.optim.Adam(
     con_net_instance.parameters(), lr=0.0001
 )  ## defining the optimizer
